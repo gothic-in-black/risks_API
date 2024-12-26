@@ -261,7 +261,7 @@ def risk_calculated(id_firm=None):
             id_type = session.execute(query, {'type_risk': type_risk}).scalar()
 
         # Add patient's info in DB (table 'research')
-        add_research(id_type, id_patient, user, birthday_date, gender, cholesterol, blood_pressure, smoking, firm_id)
+        add_research(id_type, id_patient, firm_id, **item)
 
         # Calculate risk for current patient
         risk = validator.calculate_risk(age, gender, smoking, blood_pressure, cholesterol)

@@ -37,7 +37,7 @@ def check_patient(snils, id_firm, user, birthday, gender):
         return id_patient
 
 
-def add_research(id_type, patient_id, name, birthday, gender, cholesterol, ad, smoking, firm_id):
+def add_research(id_type, patient_id, firm_id, user, birthday, gender, cholesterol, blood_pressure, smoking, **kwargs):
     """
     Adds in DB (table 'research') patient's info (including medical tests).
     The same patient but with different medical tests can be presented in the table several times.
@@ -63,8 +63,8 @@ def add_research(id_type, patient_id, name, birthday, gender, cholesterol, ad, s
         # Insert patient's info in DB (table 'research')
         query = text('INSERT INTO research (id_type, date, id_patient, name, birthday, gender, cholesterol, ad, smoking, id_firm) '
                      'VALUES (:id_type, :date_research, :patient_id, :name, :birthday, :gender, :cholesterol, :ad, :smoking, :firm_id)')
-        session.execute(query, {'id_type': id_type, 'date_research': date_research, 'patient_id': patient_id, 'name': name, 'birthday': birthday,
-                                'gender': gender, 'cholesterol': cholesterol, 'ad': ad, 'smoking': smoking, 'firm_id': firm_id})
+        session.execute(query, {'id_type': id_type, 'date_research': date_research, 'patient_id': patient_id, 'name': user, 'birthday': birthday,
+                                'gender': gender, 'cholesterol': cholesterol, 'ad': blood_pressure, 'smoking': smoking, 'firm_id': firm_id})
         session.commit()
 
 
