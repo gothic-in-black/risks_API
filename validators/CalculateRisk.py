@@ -64,6 +64,7 @@ class ScoreRiskValidator(BaseValidator):
             Calculate risk based on medical tests such as: age, gender, smoking, blood pressure and cholesterol level.
     """
     required_fields = ['user', 'birthday', 'snils', 'gender', 'smoking', 'blood_pressure', 'cholesterol', 'type']
+    correct_len = 9
 
     def calculate_risk(self, age, gender, is_smoker, systolic_bp, cholesterol):
         """

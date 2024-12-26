@@ -191,11 +191,16 @@ def risk_calculated(id_firm=None):
 
         # Create an instance of the class by risk type
         validator = type_risks[type_risk](item)
+
         # Check required fields
         is_valid = validator.validate()
-
         if not is_valid:
             return jsonify({'message': 'Invalid request body'}), 400
+
+        # Check count of received args
+        is_count = validator.len_data_items()
+        if not is_count:
+            return jsonify({'message': 'Too many arguments received'}), 400
 
         user = item.get('user')
         if not isinstance(user, str):
