@@ -39,7 +39,7 @@ class BaseValidator:
 
 class ScoreRiskValidator(BaseValidator):
     """
-    Validator for risk calculation.
+    Validator for SCORE risk calculation.
 
     This class extends the capabilities of the base validator by adding specific fields for risk calculation.
     After successful validation, performs risk calculation based on the provided data.
