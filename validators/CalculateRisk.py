@@ -15,6 +15,7 @@ class BaseValidator:
         validate(): Checks whether all required fields are present in data.
     """
     required_fields = []
+    correct_len = 0
 
     def __init__(self, data):
         """
@@ -33,6 +34,16 @@ class BaseValidator:
         """
         missing_fields = [field for field in self.required_fields if field not in self.data]
         if missing_fields:
+            return False
+        return True
+
+    def len_data_items(self):
+        """
+        Checks that the number of arguments received from user matches the expected number of arguments.
+
+        Returns (bool): True if number of arguments in user data matches the expected number of arguments, else False
+        """
+        if len(self.data) > self.correct_len:
             return False
         return True
 
