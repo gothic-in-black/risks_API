@@ -111,62 +111,64 @@ class ScoreRiskValidator(BaseValidator):
     required_fields = ['user', 'birthday', 'snils', 'gender', 'smoking', 'blood_pressure', 'cholesterol', 'type']
     correct_len = 9
 
-    def calculate_risk(self, age, gender, is_smoker, systolic_bp, cholesterol):
+    def calculate_risk(self, birthday, gender, smoking, blood_pressure, cholesterol, **kwargs):
         """
         Calculates risk based on given parameters.
 
         Args:
-            - age (int): Patient age.
+            - birthday (str): Patient's date of birth.
             - gender (str): Patient gender ('male' or 'female').
-            - is_smoker (bool): True for smoking patient, False for non-smoking.
-            - systolic_bp (int): Blood pressure of the patient.
-            - cholesterol (int): Cholesterol level of the patient.
+            - smoking (int): 1 for smoking patient, 0 for non-smoking patient.
+            - blood_pressure (int): Blood pressure of the patient.
+            - cholesterol (float): Cholesterol level of the patient.
 
         Returns (float): Calculated risk.
         """
-        # Устанавливаем коэффициенты и константы в зависимости от пола
+        # Calculate patient's age for current moment
+        age = datetime.now().year - birthday.year - ((datetime.now().month, datetime.now().day) < (birthday.month, birthday.day))
+        # Set coefficients and constants depending on gender
         if gender.lower() == 'male':
             alpha = -21.0
             p = 4.62
             alpha2 = -25.7
             p2 = 5.47
-        else:  # для женщин
+        else:  # for female
             alpha = -28.7
             p = 6.23
             alpha2 = -30.0
             p2 = 6.42
 
-        # Расчет cs0 и cs10
+        # Calculate cs0 and cs10
         cs0 = math.exp(-math.exp(alpha) * ((age - 20) ** p))
         cs10 = math.exp(-math.exp(alpha) * ((age - 10) ** p))
 
-        # Расчет ncs0 и ncs10
+        # Calculate ncs0 and ncs10
         ncs0 = math.exp(-math.exp(alpha2) * ((age - 20) ** p2))
         ncs10 = math.exp(-math.exp(alpha2) * ((age - 10) ** p2))
 
-        # Коэффициенты для курящих
-        bsm = 0.71 if is_smoker else 0
+        # Coefficients for smoking patients
+        bsm = 0.71 if smoking else 0
 
-        # Расчет wc для cs
-        wc = 0.24 * (cholesterol - 6.0) + 0.018 * (systolic_bp - 120) + bsm
+        # Calculate wc for cs
+        wc = 0.24 * (cholesterol - 6.0) + 0.018 * (blood_pressure - 120) + bsm
 
-        # Коэффициенты для курящих
-        bsm = 0.63 if is_smoker else 0
+        # Coefficients for smoking patients
+        bsm = 0.63 if smoking else 0
 
-        # Расчет wnc для ncs
-        wnc = 0.02 * (cholesterol - 6.0) + 0.022 * (systolic_bp - 120) + bsm
+        # Calculate wnc for ncs
+        wnc = 0.02 * (cholesterol - 6.0) + 0.022 * (blood_pressure - 120) + bsm
 
-        # Расчет cs1 и ncs1
+        # Calculate cs1 and ncs1
         cs = cs0 ** math.exp(wc)
         cs1 = cs10 ** math.exp(wc) / cs
         ncs = ncs0 ** math.exp(wnc)
         ncs1 = ncs10 ** math.exp(wnc) / ncs
 
-        # Итоговый риск
+        # Result risk
         r = 1.0 - cs1
         r1 = 1.0 - ncs1
 
-        # Возвращаем результат в процентах
+        # Return the result as a percentage
         return round(100.0 * (r + r1), 2)
 
     def check_types(self, item):
