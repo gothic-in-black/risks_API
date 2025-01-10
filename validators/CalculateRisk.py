@@ -1,4 +1,6 @@
 import math
+from flask import jsonify
+from datetime import datetime
 
 
 class BaseValidator:
@@ -12,7 +14,9 @@ class BaseValidator:
         - data (dict): Data for checking.
 
     Methods:
-        validate(): Checks whether all required fields are present in data.
+        - validate(): Checks whether all required fields are present in data.
+        - len_data_items(): Checks that the number of arguments received from user matches the expected number of arguments.
+        - check_types(): Checks types of the base arguments received from user.
     """
     required_fields = []
     correct_len = 0
@@ -47,6 +51,46 @@ class BaseValidator:
             return False
         return True
 
+    def check_types(self, item):
+        """
+        Checks the types of data received from user, that are independent of the risk type.
+
+        Args:
+            - item (dict): Data for checking.
+
+        Returns (tuple):
+            - bool: True if all checks were successful else False.
+            - dict or Response: returns dict with valid data if all checks were successful else returns Response object with the error message.
+        """
+        user = item.get('user')
+        if not isinstance(user, str):
+            return False, jsonify({'message': f'The type of user must be a string, not a {type(user).__name__}.'})
+
+        birthday_date = item.get('birthday')
+        if not isinstance(birthday_date, str):
+            return False, jsonify({'message': f'The type of birthday must be a string, not a {type(birthday_date).__name__}.'})
+        try:
+            birthday = datetime.strptime(birthday_date, '%Y-%m-%d').date()
+        except ValueError:
+            return False, jsonify({'message': 'The birthday must be in the format YYYY-MM-DD.'})
+
+        snils = item.get('snils')
+        if not isinstance(snils, int):
+            return False, jsonify({'message': f'The type of snils must be an int, not {type(snils).__name__}'})
+
+        gender = item.get('gender')
+        if not isinstance(gender, str):
+            return False, jsonify({'message': f'The type of gender must be a string, not {type(gender).__name__}'})
+        if not gender in ['male', 'female']:
+            return False, jsonify({'message': 'The gender must be a male or female'})
+
+        return_answer = item.get('return_answer', False)
+        if not isinstance(return_answer, bool):
+            return False, jsonify({'message': f'The type of return_answer must be a bool, not {type(return_answer).__name__}'})
+
+        return True, {'user': user, 'birthday': birthday, 'snils': snils, 'gender': gender, 'return_answer': return_answer}
+
+
 
 class ScoreRiskValidator(BaseValidator):
     """
@@ -60,10 +104,12 @@ class ScoreRiskValidator(BaseValidator):
         - data (dict): Data for checking and using in risk calculation.
 
     Methods:
-        calculate_risk(age, gender, is_smoker, systolic_bp, cholesterol):
-            Calculate risk based on medical tests such as: age, gender, smoking, blood pressure and cholesterol level.
+        - calculate_risk(age, gender, is_smoker, systolic_bp, cholesterol):
+            Calculate risk based on medical tests such as: age, gender, smoking, blood pressure and cholesterol level.\
+        - check_types(): Checks types of the arguments received from user, that are needed for score risk calculation.
     """
     required_fields = ['user', 'birthday', 'snils', 'gender', 'smoking', 'blood_pressure', 'cholesterol', 'type']
+    correct_len = 9
 
     def calculate_risk(self, age, gender, is_smoker, systolic_bp, cholesterol):
         """
@@ -123,8 +169,42 @@ class ScoreRiskValidator(BaseValidator):
         # Возвращаем результат в процентах
         return round(100.0 * (r + r1), 2)
 
+    def check_types(self, item):
+        """
+        Checks the types of data received from user, that are needed for score risk calculation.
 
-# This dict is used in "routes.py" to create an instance of the right class accordingly user query
+        Args:
+            - item (dict): Data for checking.
+
+        Returns (tuple):
+            - bool: True if all checks were successful else False.
+            - dict or Response: returns dict with valid data if all checks were successful else returns Response object with the error message.
+        """
+        is_valid, result = super().check_types(item)
+        if not is_valid:
+            return False, result
+
+        # smoking: 1 - yes, 0 - no
+        smoking = item.get('smoking')
+        if not isinstance(smoking, int):
+            return False, jsonify({'message': f'The type of smoking must be an integer, not a {type(smoking).__name__}'})
+        if not smoking in [0, 1]:
+            return False, jsonify({'message': 'The smoking must be a 0 or 1'})
+
+        blood_pressure = item.get('blood_pressure')
+        if not isinstance(blood_pressure, int):
+            return False, jsonify({'message': f'The type of blood_pressure must be an integer, not {type(blood_pressure).__name__}'})
+
+        cholesterol = item.get('cholesterol')
+        if not isinstance(cholesterol, float):
+            return False, jsonify({'message': f'The type of cholesterol must be a float, not {type(cholesterol).__name__}'})
+
+        valid_data = {**result.copy(), **{'smoking': smoking, 'blood_pressure': blood_pressure, 'cholesterol': cholesterol}}
+
+        return True, valid_data
+
+
+# This dict is used in "routes.py" to create an instance of the right class accordingly user query.
 # Key of the dict is received from user data, Value is name of the corresponding class
 type_risks = {
     'score': ScoreRiskValidator

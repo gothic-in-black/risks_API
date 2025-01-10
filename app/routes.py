@@ -188,69 +188,31 @@ def risk_calculated(id_firm=None):
     for item in data:
         # Get risk name
         type_risk = item.get('type')
+        if not isinstance(type_risk, str):
+            return jsonify({'message': f'The type of type_risk must be a string, not {type(type_risk).__name__}'}), 400
+        if not type_risk in type_risks:
+            return jsonify({'message': 'This type of risk does not exist'}), 400
 
         # Create an instance of the class by risk type
         validator = type_risks[type_risk](item)
         # Check required fields
         is_valid = validator.validate()
-
         if not is_valid:
             return jsonify({'message': 'Invalid request body'}), 400
 
-        user = item.get('user')
-        if not isinstance(user, str):
-            return jsonify({'message': f'The type of user must be a string, not a {type(user).__name__}.'}), 403
-
-        birthday_date = item.get('birthday')
-        if not isinstance(birthday_date, str):
-            return jsonify({'message': f'The type of birthday must be a string, not a {type(birthday_date).__name__}.'}), 403
-        try:
-            birthday = datetime.strptime(birthday_date, '%Y-%m-%d').date()
-        except ValueError:
-            return jsonify({'message': 'The birthday must be in the format YYYY-MM-DD.'}), 403
-
-        # Calculate patient's age for current moment
-        age = datetime.now().year - birthday.year - ((datetime.now().month, datetime.now().day) < (birthday.month, birthday.day))
-
-        snils = int(item.get('snils'))
-        if not isinstance(snils, int):
-            return jsonify({'message': f'The type of snils must be an int, not {type(snils).__name__}'})
-
-        gender = item.get('gender')
-        if not isinstance(gender, str):
-            return jsonify({'message': f'The type of gender must be a string, not {type(gender).__name__}'})
-        if not gender in ['male', 'female']:
-            return jsonify({'message': 'The gender must be a male or female'})
-
-        # smoking: 1 - yes, 0 - no
-        smoking = item.get('smoking')
-        if not isinstance(smoking, int):
-            return jsonify({'message': f'The type of smoking must be an integer, not a {type(smoking).__name__}'})
-        if not smoking in [0, 1]:
-            return jsonify({'message': 'The smoking must be a 0 or 1'})
-
-        blood_pressure = item.get('blood_pressure')
-        if not isinstance(blood_pressure, int):
-            return jsonify({'message': f'The type of blood_pressure must be an integer, not {type(blood_pressure).__name__}'})
-
-        cholesterol = item.get('cholesterol')
-        if not isinstance(cholesterol, float):
-            return jsonify({'message': f'The type of cholesterol must be a float, not {type(cholesterol).__name__}'})
-
-        # the risk type was got earlier to create an instance of the class
-        if not isinstance(type_risk, str):
-            return jsonify({'message': f'The type of type_risk must be a string, not {type(type_risk).__name__}'})
-        if not type_risk in type_risks:
-            return jsonify({'message': 'This type of risk does not exist'})
-
-        return_answer = item.get('return_answer') or False
-        if not isinstance(return_answer, bool):
-            return jsonify({'message': f'The type of return_answer must be a bool, not {type(return_answer).__name__}'})
+        # Check count of received args
+        is_count = validator.len_data_items()
+        if not is_count:
+            return jsonify({'message': 'Too many arguments received'}), 400
 
         firm_id = id_firm
 
+        correct_types, res = validator.check_types(item)
+        if not correct_types:
+            return res, 400
+
         # Check DB for presence of the current patient, in case of absence insert him into DB
-        id_patient = check_patient(snils, firm_id, user, birthday, gender)
+        id_patient = check_patient(firm_id, **res)
 
         # Get risk ID (id_type) to pass it in function "add_research"
         # Create session to interact with DB
@@ -264,17 +226,16 @@ def risk_calculated(id_firm=None):
         add_research(id_type, id_patient, firm_id, **item)
 
         # Calculate risk for current patient
-        risk = validator.calculate_risk(age, gender, smoking, blood_pressure, cholesterol)
+        risk = validator.calculate_risk(**res)
 
         # Add calculated risk in DB (table 'risks')
-        add_risk(id_type, risk, id_patient, user, birthday_date, firm_id)
-
+        add_risk(id_type, risk, firm_id, id_patient, **res)
 
         # Add to List 'result' calculated risk if return_answer == True, else add success message.
         # SNILS uses in messages to identify patient
-        if return_answer:
-            result.append({'message': f'risk_score for user snils {snils} = {risk}'})
+        if res['return_answer']:
+            result.append({'message': f'risk_score for user snils {res['snils']} = {risk}'})
         else:
-            result.append({'message': f'data for user snils {snils} has been sent successfully'})
+            result.append({'message': f'data for user snils {res['snils']} has been sent successfully'})
     # Return result of the query to user
     return result
