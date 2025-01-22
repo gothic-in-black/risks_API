@@ -4,7 +4,7 @@ from datetime import datetime
 from . import db
 
 
-def check_patient(snils, id_firm, user, birthday, gender):
+def check_patient(id_firm, snils,  user, birthday, gender, **kwargs):
     """
     Checks patient's presence in DB. In case of absence patient in DB, adds him.
 
@@ -68,7 +68,7 @@ def add_research(id_type, patient_id, firm_id, user, birthday, gender, cholester
         session.commit()
 
 
-def add_risk(id_type, risk, id_patient, name, birthday, id_firm):
+def add_risk(id_type, risk, id_firm, id_patient, user, birthday, **kwargs):
     """
     Adds in DB (table 'risks') calculated risk.
     The same patient but with different medical tests can be presented in the table several times.
@@ -90,5 +90,5 @@ def add_risk(id_type, risk, id_patient, name, birthday, id_firm):
     with Session() as session:
         # Insert patient's calculated risk in DB (table 'risks')
         query = text('INSERT INTO risks (id_type, risk, id_patient, name, birthday, id_firm, date) VALUES (:id_type, :risk, :id_patient, :name, :birthday, :id_firm, :date_calculate)')
-        session.execute(query, {'id_type': id_type, 'risk': risk, 'id_patient': id_patient, 'name': name, 'birthday': birthday, 'id_firm': id_firm, 'date_calculate': date_calculate})
+        session.execute(query, {'id_type': id_type, 'risk': risk, 'id_patient': id_patient, 'name': user, 'birthday': birthday, 'id_firm': id_firm, 'date_calculate': date_calculate})
         session.commit()
