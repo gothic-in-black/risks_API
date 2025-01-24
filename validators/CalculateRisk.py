@@ -135,12 +135,13 @@ class ScoreRiskValidator(BaseValidator):
     After successful validation, performs risk calculation based on the provided data.
 
     Attributes:
-        - required_fields (list): List of the required fields for risk calculation.
-        - data (dict): Data for checking and using in risk calculation.
+        - required_fields (list): List of the required fields.
+        - correct_len (int): Expected length of the data (if applicable).
+        - research_list (list): List of fields relevant for research (e.g., 'firm_id', 'id_type', etc.).
+        - data (dict): Data for checking.
 
     Methods:
-        - calculate_risk(age, gender, is_smoker, systolic_bp, cholesterol):
-            Calculate risk based on medical tests such as: age, gender, smoking, blood pressure and cholesterol level.\
+        - calculate_risk(): Calculate risk based on medical tests such as: age, gender, smoking, blood pressure and cholesterol level.\
         - check_types(): Checks types of the arguments received from user, that are needed for score risk calculation.
     """
     required_fields = ['user', 'birthday', 'snils', 'gender', 'smoking', 'blood_pressure', 'cholesterol', 'type']
@@ -242,8 +243,147 @@ class ScoreRiskValidator(BaseValidator):
         return True, valid_data
 
 
+class KerdoIndexValidator(BaseValidator):
+    """
+    Validator for Kerdo Index calculation.
+
+    This class extends the capabilities of the base validator by adding specific fields for Kerdo Index calculation.
+    After successful validation, performs risk calculation based on the provided data.
+
+    Attributes:
+        - required_fields (list): List of the required fields.
+        - correct_len (int): Expected length of the data (if applicable).
+        - research_list (list): List of fields relevant for research (e.g., 'firm_id', 'id_type', etc.).
+        - data (dict): Data for checking.
+
+    Methods:
+        - calculate_risk(): Calculate risk based on medical tests such as: 'diastolic_bp', 'pulse'.\
+        - check_types(): Checks types of the arguments received from user, that are needed for Kerdo Index calculation.
+    """
+    required_fields = ['user', 'birthday', 'snils', 'gender', 'diastolic_bp', 'pulse', 'type']
+    correct_len = 8
+    research_list = ['id_firm', 'id_type', 'id_patient', 'user', 'birthday', 'gender', 'date', 'diastolic_bp', 'pulse']
+
+    def calculate_risk(self, diastolic_bp, pulse, **kwargs):
+        """
+        Calculates risk based on given parameters.
+
+        Args:
+            - diastolic_bp (int): Diastolic blood pressure of the patient.
+            - pulse (int): Heart rate (pulse) of the patient.
+
+
+        Returns (float): Calculated risk.
+        """
+        index = 100 * (1 - diastolic_bp/pulse)
+        return index
+
+
+    def check_types(self, item):
+        """
+        Checks the types of data received from user, that are needed for Kerdo Index calculation.
+
+        Args:
+            - item (dict): Data for checking.
+
+        Returns (tuple):
+            - bool: True if all checks were successful else False.
+            - dict or Response: returns dict with valid data if all checks were successful else returns Response object with the error message.
+        """
+        is_valid, result = super().check_types(item)
+        if not is_valid:
+            return False, result
+
+        diastolic_bp = item.get('diastolic_bp')
+        if not isinstance(diastolic_bp, int):
+            return False, jsonify(
+                {'message': f'The type of diastolic_bp must be an integer, not {type(diastolic_bp).__name__}'})
+
+        pulse = item.get('pulse')
+        if not isinstance(pulse, int):
+            return False, jsonify({'message': f'The type of pulse must be an integer, not {type(pulse).__name__}'})
+
+        valid_data = {**result.copy(), **{'diastolic_bp': diastolic_bp, 'pulse': pulse}}
+
+        return True, valid_data
+
+
+class KvaasIndexValidator(BaseValidator):
+    """
+    Validator for Kvaas Index calculation.
+
+    This class extends the capabilities of the base validator by adding specific fields for Kvaas Index calculation.
+    After successful validation, performs risk calculation based on the provided data.
+
+    Attributes:
+        - required_fields (list): List of the required fields.
+        - correct_len (int): Expected length of the data (if applicable).
+        - research_list (list): List of fields relevant for research (e.g., 'firm_id', 'id_type', etc.).
+        - data (dict): Data for checking.
+
+    Methods:
+        - calculate_risk(): Calculate risk based on medical tests such as: 'diastolic_bp', 'systolic_bp', 'pulse'.\
+        - check_types(): Checks types of the arguments received from user, that are needed for Kvaas Index calculation.
+    """
+    required_fields = ['user', 'birthday', 'snils', 'gender', 'diastolic_bp', 'systolic_bp', 'pulse', 'type']
+    correct_len = 9
+    research_list = ['id_firm', 'id_type', 'id_patient', 'user', 'birthday', 'gender', 'date', 'diastolic_bp', 'systolic_bp', 'pulse']
+
+    def calculate_risk(self, diastolic_bp, systolic_bp, pulse, **kwargs):
+        """
+        Calculates risk based on given parameters.
+
+        Args:
+            - diastolic_bp (int): Diastolic blood pressure of the patient.
+            - pulse (int): Heart rate (pulse) of the patient.
+            - systolic_bp (int): Systolic blood pressure of the patient.
+
+
+        Returns (float): Calculated risk.
+        """
+        index = 10 * pulse / (systolic_bp - diastolic_bp)
+        return index
+
+
+    def check_types(self, item):
+        """
+        Checks the types of data received from user, that are needed for Kvaas Index calculation.
+
+        Args:
+            - item (dict): Data for checking.
+
+        Returns (tuple):
+            - bool: True if all checks were successful else False.
+            - dict or Response: returns dict with valid data if all checks were successful else returns Response object with the error message.
+        """
+        is_valid, result = super().check_types(item)
+        if not is_valid:
+            return False, result
+
+        diastolic_bp = item.get('diastolic_bp')
+        if not isinstance(diastolic_bp, int):
+            return False, jsonify(
+                {'message': f'The type of diastolic_bp must be an integer, not {type(diastolic_bp).__name__}'})
+
+        pulse = item.get('pulse')
+        if not isinstance(pulse, int):
+            return False, jsonify({'message': f'The type of pulse must be an integer, not {type(pulse).__name__}'})
+
+        systolic_bp = item.get('systolic_bp')
+        if not isinstance(systolic_bp, int):
+            return False, jsonify(
+                {'message': f'The type of systolic_bp must be an integer, not {type(diastolic_bp).__name__}'})
+
+        valid_data = {**result.copy(), **{'diastolic_bp': diastolic_bp, 'pulse': pulse, 'systolic_bp': systolic_bp}}
+
+        return True, valid_data
+
+
+
 # This dict is used in "routes.py" to create an instance of the right class accordingly user query.
 # Key of the dict is received from user data, Value is name of the corresponding class
 type_risks = {
-    'score': ScoreRiskValidator
+    'score': ScoreRiskValidator,
+    'kerdo': KerdoIndexValidator,
+    'kvaas': KvaasIndexValidator
 }
