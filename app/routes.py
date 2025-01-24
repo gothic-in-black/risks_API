@@ -7,7 +7,7 @@ from datetime import datetime, date
 
 from . import db
 from .auth import token_required
-from .utils import check_patient, add_research, add_risk
+from .utils import check_patient, add_risk
 from validators.CalculateRisk import type_risks
 
 
@@ -223,7 +223,7 @@ def risk_calculated(id_firm=None):
             id_type = session.execute(query, {'type_risk': type_risk}).scalar()
 
         # Add patient's info in DB (table 'research')
-        add_research(id_type, id_patient, firm_id, **item)
+        validator.add_research(id_firm=firm_id, id_type=id_type, id_patient=id_patient, **res)
 
         # Calculate risk for current patient
         risk = validator.calculate_risk(**res)

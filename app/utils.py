@@ -37,37 +37,6 @@ def check_patient(id_firm, snils,  user, birthday, gender, **kwargs):
         return id_patient
 
 
-def add_research(id_type, patient_id, firm_id, user, birthday, gender, cholesterol, blood_pressure, smoking, **kwargs):
-    """
-    Adds in DB (table 'research') patient's info (including medical tests).
-    The same patient but with different medical tests can be presented in the table several times.
-
-    Args:
-        - id_type (int): Risk ID
-        - patient_id (int): Patient ID
-        - name (str): Patient's full name
-        - birthday (datetime): Patient's date of birth
-        - gender (str): Patient's gender
-        - cholesterol (float): Patient's cholesterol level
-        - ad (int): Patient's blood_pressure level
-        - smoking (int): 1 for smoking patient, 0 for non-smoking patient
-        - firm_id (int): Firm ID (passed via decorator @token_required)
-
-    Returns: None
-    """
-    # Date and time the patient's info was added in DB
-    date_research = (datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
-    # Create session to interact with DB
-    Session = sessionmaker(bind=db.engine)
-    with Session() as session:
-        # Insert patient's info in DB (table 'research')
-        query = text('INSERT INTO research (id_type, date, id_patient, name, birthday, gender, cholesterol, ad, smoking, id_firm) '
-                     'VALUES (:id_type, :date_research, :patient_id, :name, :birthday, :gender, :cholesterol, :ad, :smoking, :firm_id)')
-        session.execute(query, {'id_type': id_type, 'date_research': date_research, 'patient_id': patient_id, 'name': user, 'birthday': birthday,
-                                'gender': gender, 'cholesterol': cholesterol, 'ad': blood_pressure, 'smoking': smoking, 'firm_id': firm_id})
-        session.commit()
-
-
 def add_risk(id_type, risk, id_firm, id_patient, user, birthday, **kwargs):
     """
     Adds in DB (table 'risks') calculated risk.

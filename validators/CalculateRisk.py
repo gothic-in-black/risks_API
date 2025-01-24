@@ -1,6 +1,9 @@
 import math
 from flask import jsonify
 from datetime import datetime
+from sqlalchemy import text
+from sqlalchemy.orm import sessionmaker
+from app import db
 
 
 class BaseValidator:
@@ -11,15 +14,19 @@ class BaseValidator:
 
     Attributes:
         - required_fields (list): List of the required fields.
+        - correct_len (int): Expected length of the data (if applicable).
+        - research_list (list): List of fields relevant for research (e.g., 'firm_id', 'id_type', etc.).
         - data (dict): Data for checking.
 
     Methods:
         - validate(): Checks whether all required fields are present in data.
         - len_data_items(): Checks that the number of arguments received from user matches the expected number of arguments.
         - check_types(): Checks types of the base arguments received from user.
+        - add_research(): Adds in DB (table 'research') patient's info (including medical tests).
     """
     required_fields = []
     correct_len = 0
+    research_list = ['id_firm', 'id_type', 'id_patient', 'user', 'birthday', 'gender', 'date']
 
     def __init__(self, data):
         """
@@ -91,6 +98,34 @@ class BaseValidator:
         return True, {'user': user, 'birthday': birthday, 'snils': snils, 'gender': gender, 'return_answer': return_answer}
 
 
+    def add_research(self, **kwargs):
+        """
+            Adds in DB (table 'research') patient's info (including medical tests).
+            The same patient but with different medical tests can be presented in the table several times.
+
+            Args:
+                - id_firm (int): Firm ID.
+                - id_type (int): Risk ID.
+                - id_patient (int): Patient ID.
+                - user (str): Patient's full name.
+                - birthday (datetime): Patient's date of birth.
+                - gender (str): Patient's gender.
+                - date (str): Date of research.
+
+            Returns: None
+            """
+        # Date and time the patient's info was added in DB
+        date_research = (datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
+        kwargs['date'] = date_research
+        columns_str = ', '.join([f'"{el}"' for el in self.research_list])
+        placeholders_str = ', '.join([':' + col for col in self.research_list])
+        # Create session to interact with DB
+        Session = sessionmaker(bind=db.engine)
+        with Session() as session:
+            query = f'INSERT INTO research ({columns_str}) VALUES ({placeholders_str})'
+            session.execute(text(query), kwargs)
+            session.commit()
+
 
 class ScoreRiskValidator(BaseValidator):
     """
@@ -110,6 +145,7 @@ class ScoreRiskValidator(BaseValidator):
     """
     required_fields = ['user', 'birthday', 'snils', 'gender', 'smoking', 'blood_pressure', 'cholesterol', 'type']
     correct_len = 9
+    research_list = ['id_firm', 'id_type', 'id_patient', 'user', 'birthday', 'gender', 'date', 'smoking', 'blood_pressure', 'cholesterol']
 
     def calculate_risk(self, birthday, gender, smoking, blood_pressure, cholesterol, **kwargs):
         """
