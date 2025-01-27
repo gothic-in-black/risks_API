@@ -7,7 +7,7 @@ class Patients(db.Model):
     name = db.Column(db.String(100), nullable=False)
     birthday = db.Column(db.Date, nullable=False)
     sex = db.Column(db.String(8), nullable=False)
-    snils = db.Column(db.Integer, nullable=False)
+    snils = db.Column(db.String, nullable=False)
     id_firm = db.Column(db.Integer, nullable=False)
     smoking = db.Column(db.Boolean, nullable=False)
 

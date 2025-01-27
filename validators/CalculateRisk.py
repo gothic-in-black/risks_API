@@ -82,8 +82,8 @@ class BaseValidator:
             return False, jsonify({'message': 'The birthday must be in the format YYYY-MM-DD.'})
 
         snils = item.get('snils')
-        if not isinstance(snils, int):
-            return False, jsonify({'message': f'The type of snils must be an int, not {type(snils).__name__}'})
+        if not isinstance(snils, str):
+            return False, jsonify({'message': f'The type of snils must be a string, not {type(snils).__name__}'})
 
         gender = item.get('gender')
         if not isinstance(gender, str):
