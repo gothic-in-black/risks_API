@@ -73,23 +73,18 @@ def get_research(id_firm=None):
     # Create session to interact with DB
     Session = sessionmaker(bind=db.engine)
     with Session() as session:
+        query = text('SELECT * FROM research LIMIT 1')
+        res = session.execute(query)
+        column_names = list(res.keys())
         # Select all research for current firm_id between [dateFrom and dateTo]
-        query = text('SELECT date, name, birthday, gender, cholesterol, ad, smoking '
-                     'FROM research WHERE id_firm = :firm_id AND date BETWEEN :dateFrom AND :dateTo')
+        query = text('SELECT * FROM research WHERE id_firm = :firm_id AND date BETWEEN :dateFrom AND :dateTo')
         result = session.execute(query, {'firm_id': firm_id, 'dateFrom': dateFrom, 'dateTo': dateTo})
 
-        research = [{'date': row[0].strftime('%Y-%m-%d %H:%M:%S') if isinstance(row[0], (datetime, date)) else row[0],
-                     'name': row[1],
-                     'birthday': row[2].strftime('%Y-%m-%d') if isinstance(row[2], (datetime, date)) else row[2],
-                     'gender': row[3],
-                     'cholesterol': float(row[4]),
-                     'ad': row[5],
-                     'smoking': row[6]} for row in result]
-
+        #Skip first 4 columns in 'research' table: 'id', 'id_firm', 'id_patient', 'id_firm'
+        research = [{column_names[i]: row[i] for i in range(4, len(row)) if row[i]} for row in result]
         # Transform research info in JSON and return it
-        response = make_response(json.dumps({'research': research}, ensure_ascii=False))
+        response = make_response(json.dumps({'research': research}, ensure_ascii=False, default=str))
         response.headers['Content-Type'] = 'application/json; charset=utf-8'
-
         return response
 
 
