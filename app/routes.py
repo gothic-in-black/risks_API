@@ -5,7 +5,7 @@ from sqlalchemy import text
 from flask import make_response
 from datetime import datetime, date
 
-from . import db
+from . import db, limiter
 from .auth import token_required
 from .utils import check_patient, add_risk
 from validators.CalculateRisk import type_risks
@@ -17,6 +17,7 @@ routes = Blueprint('routes', __name__)
 # Route registration
 @routes.route('/niimt/api/v1/patients_list', methods=['GET'])
 @token_required
+@limiter.limit("5 per minute")
 def get_listOfEmployees(id_firm=None):
     """
     Route to get list of employees (patients).
@@ -46,6 +47,7 @@ def get_listOfEmployees(id_firm=None):
 
 @routes.route('/niimt/api/v1/research_list', methods=['GET'])
 @token_required
+@limiter.limit("8 per minute")
 def get_research(id_firm=None):
     """
     Route to get list of research.
@@ -96,6 +98,7 @@ def get_research(id_firm=None):
 
 @routes.route('/niimt/api/v1/risk_list', methods=['GET'])
 @token_required
+@limiter.limit("8 per minute")
 def get_risks(id_firm=None):
     """
     Route to get calculated risks (result of research).
@@ -154,6 +157,7 @@ def get_risks(id_firm=None):
 
 @routes.route('/niimt/api/v1/calculate_risk', methods=['POST'])
 @token_required
+@limiter.limit("1 per second")
 def risk_calculated(id_firm=None):
     """
     Route to send patients data.

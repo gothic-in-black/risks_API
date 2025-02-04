@@ -1,5 +1,6 @@
 import redis
-from flask import Flask
+from flask import Flask, request
+from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import dotenv_values
@@ -13,6 +14,12 @@ cache = redis.StrictRedis(host='localhost', port=6379, db=0)
 # Reading configuration values from ".env" file
 config = dotenv_values('.env')
 
+# Initializing a limiter object using the Authorization header as a key
+limiter = Limiter(
+    key_func=lambda: request.headers.get('Authorization'),
+    storage_uri='redis://localhost:6379/1'
+)
+
 def create_app():
     """Create Flask app"""
     app = Flask(__name__)
@@ -24,4 +31,6 @@ def create_app():
 
     # Initializing the SQLAlchemy extension
     db.init_app(app)
+    # Initializing the limiter extension
+    limiter.init_app(app)
     return app
