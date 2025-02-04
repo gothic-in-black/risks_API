@@ -64,11 +64,17 @@ def get_research(id_firm=None):
     dateFrom = request.args.get('dateFrom') or '2024-08-01'
     dateTo = request.args.get('dateTo') or datetime.now().strftime('%Y-%m-%d')
 
-    # Transform string dateFrom to datetime, set format '%Y-%m-%d 00:00:00'
-    dateFrom = datetime.strptime(dateFrom, '%Y-%m-%d').strftime('%Y-%m-%d 00:00:00')
+    try:
+        # Transform string dateFrom to datetime, set format '%Y-%m-%d 00:00:00'
+        dateFrom = datetime.strptime(dateFrom, '%Y-%m-%d').strftime('%Y-%m-%d 00:00:00')
+    except ValueError:
+        return jsonify({'message': 'dateFrom must be in the format YYYY-MM-DD. Make sure month and day are valid values.'}), 400
 
-    # Transform string dateTo to datetime, set format '%Y-%m-%d <current_time>'
-    dateTo = datetime.strptime(f'{dateTo} {datetime.now().strftime('%H:%M:%S')}', '%Y-%m-%d %H:%M:%S')
+    try:
+        # Transform string dateTo to datetime, set format '%Y-%m-%d <current_time>'
+        dateTo = datetime.strptime(f"{dateTo} {datetime.now().strftime('%H:%M:%S')}", '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        return jsonify({'message': 'dateTo must be in the format YYYY-MM-DD. Make sure month and day are valid values.'}), 400
 
     # Create session to interact with DB
     Session = sessionmaker(bind=db.engine)
@@ -108,11 +114,17 @@ def get_risks(id_firm=None):
     dateFrom = request.args.get('dateFrom') or '2024-08-01'
     dateTo = request.args.get('dateTo') or datetime.now().strftime('%Y-%m-%d')
 
-    # Transform string dateFrom to datetime, set format '%Y-%m-%d 00:00:00'
-    dateFrom = datetime.strptime(dateFrom, '%Y-%m-%d').strftime('%Y-%m-%d 00:00:00')
+    try:
+        # Transform string dateFrom to datetime, set format '%Y-%m-%d 00:00:00'
+        dateFrom = datetime.strptime(dateFrom, '%Y-%m-%d').strftime('%Y-%m-%d 00:00:00')
+    except ValueError:
+        return jsonify({'message': 'dateFrom must be in the format YYYY-MM-DD. Make sure month and day are valid values.'}), 400
 
-    # Transform string dateTo to datetime, set format '%Y-%m-%d <current_time>'
-    dateTo = datetime.strptime(f'{dateTo} {datetime.now().strftime('%H:%M:%S')}', '%Y-%m-%d %H:%M:%S')
+    try:
+        # Transform string dateTo to datetime, set format '%Y-%m-%d <current_time>'
+        dateTo = datetime.strptime(f"{dateTo} {datetime.now().strftime('%H:%M:%S')}", '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        return jsonify({'message': 'dateTo must be in the format YYYY-MM-DD. Make sure month and day are valid values.'}), 400
 
     # Create session to interact with DB
     Session = sessionmaker(bind=db.engine)

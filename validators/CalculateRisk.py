@@ -79,7 +79,7 @@ class BaseValidator:
         try:
             birthday = datetime.strptime(birthday_date, '%Y-%m-%d').date()
         except ValueError:
-            return False, jsonify({'message': 'The birthday must be in the format YYYY-MM-DD.'})
+            return False, jsonify({'message': 'The birthday must be in the format YYYY-MM-DD. Make sure month and day are valid values.'})
 
         snils = item.get('snils')
         if not isinstance(snils, str):
