@@ -14,6 +14,19 @@ from validators.CalculateRisk import type_risks
 # Create a Blueprint instance named 'routes'
 routes = Blueprint('routes', __name__)
 
+# Error handler for status code 429 (Too many requests)
+@routes.errorhandler(429)
+def ratelimit_error(e):
+    return jsonify({'error': 'Too many requests',
+                    'message': "You have exceeded the limit of requests. Please try again later.",
+                    'timestamp': datetime.now().isoformat()}), 429
+
+# Error handler for status code 500 (Internal server error)
+@routes.errorhandler(500)
+def server_error(e):
+    return jsonify({'error': "Internal server error"}), 500
+
+
 # Route registration
 @routes.route('/niimt/api/v1/patients_list', methods=['GET'])
 @token_required
