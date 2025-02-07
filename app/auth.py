@@ -40,11 +40,11 @@ def token_required(f):
                 # Save token info in cache for 1 hour
                 cache.set(token, json.dumps({'methods': allowed_methods, 'id_firm': id_firm}), ex=3600)
             except ExpiredSignatureError:
-                return jsonify({'message':'token has expired'}), 401
+                return jsonify({'message':'Token has expired'}), 401
             except ImmatureSignatureError:
-                return jsonify({'message': 'token has not start yet'}), 401
+                return jsonify({'message': 'Token has not start yet'}), 401
             except InvalidTokenError:
-                return jsonify({'message': 'invalid token'}), 401
+                return jsonify({'message': 'Invalid token'}), 401
 
         # Get method name from the endpoint
         method_name = request.endpoint.split('.')[-1]
