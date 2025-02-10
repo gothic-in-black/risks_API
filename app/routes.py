@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from flask import make_response
 from datetime import datetime, date
+from werkzeug.exceptions import BadRequest
 
 from . import db, limiter
 from .auth import token_required
@@ -13,6 +14,13 @@ from validators.CalculateRisk import type_risks
 
 # Create a Blueprint instance named 'routes'
 routes = Blueprint('routes', __name__)
+
+# Error handler for code 400 (Bad request)
+@routes.errorhandler(BadRequest)
+def bad_request(e):
+    return jsonify({'error': 'Bad Request',
+                    'message': "Invalid JSON format. Please check your request.",
+                    'timestamp': datetime.now().isoformat()}), 400
 
 # Error handler for status code 429 (Too many requests)
 @routes.errorhandler(429)
