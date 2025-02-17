@@ -1,10 +1,14 @@
 import json
+import logging
 import jwt
 from functools import wraps
-from flask import request, jsonify
+from flask import request, jsonify, g
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError, ImmatureSignatureError
 from . import cache, config
 
+
+# Create a logger instance
+logger = logging.getLogger(__name__)
 
 def token_required(f):
     """
@@ -16,6 +20,7 @@ def token_required(f):
         # Get token from headers
         token = request.headers.get('Authorization')
         if not token:
+            logger.warning("Request without token from IP: %s", request.remote_addr)
             return jsonify({'message': 'Token is missing!'}), 401
 
         # Checking cache for token info
@@ -28,7 +33,9 @@ def token_required(f):
 
             # If token doesn't contain methods
             if allowed_methods is None:
+                logger.warning('Token without access rights: %s', id_firm)
                 return jsonify({'message': 'Token data is incomplete. Please contact support to check available methods.'}), 403
+            logger.info("Get token from cache. IP: %s, ID firm: %s", request.remote_addr, id_firm)
         else:
             try:
                 # Decode token using the secret key
@@ -39,11 +46,15 @@ def token_required(f):
 
                 # Save token info in cache for 1 hour
                 cache.set(token, json.dumps({'methods': allowed_methods, 'id_firm': id_firm}), ex=3600)
+                logger.info("The token has been successfully decrypted and added to the cache. ID firm: %s", id_firm)
             except ExpiredSignatureError:
+                logger.warning("Expired token from IP: %s", request.remote_addr)
                 return jsonify({'message':'Token has expired'}), 401
             except ImmatureSignatureError:
+                logger.warning("Token has not start yet. IP: %s", request.remote_addr)
                 return jsonify({'message': 'Token has not start yet'}), 401
             except InvalidTokenError:
+                logger.warning("Invalid token from IP: %s", request.remote_addr)
                 return jsonify({'message': 'Invalid token'}), 401
 
         # Get method name from the endpoint
@@ -51,10 +62,15 @@ def token_required(f):
 
         # Check if the current method is available
         if method_name not in allowed_methods:
+            logger.warning("Access to the method '%s' forbidden for ID firm: %s", method_name, id_firm)
             return jsonify({'message': 'Method not allowed!'}), 403
+
+        # Save id_firm in global variable g
+        g.id_firm = id_firm
 
         # Pass the id_firm to the function
         kwargs['id_firm'] = id_firm
+        logger.info("Access to the method '%s' is allowed. ID firm: %s", method_name, id_firm)
 
         # Call the original function with arguments
         return f(*args, **kwargs)
