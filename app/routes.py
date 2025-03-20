@@ -45,8 +45,8 @@ def server_error(e):
 
 # Route registration
 @routes.route('/niimt/api/v1/patients_list', methods=['GET'])
-@token_required
 @limiter.limit("5 per minute")
+@token_required
 def get_listOfEmployees(id_firm=None):
     """
     Route to get list of employees (patients).
@@ -81,8 +81,8 @@ def get_listOfEmployees(id_firm=None):
 
 
 @routes.route('/niimt/api/v1/research_list', methods=['GET'])
-@token_required
 @limiter.limit("8 per minute")
+@token_required
 def get_research(id_firm=None):
     """
     Route to get list of research.
@@ -140,8 +140,8 @@ def get_research(id_firm=None):
 
 
 @routes.route('/niimt/api/v1/risk_list', methods=['GET'])
-@token_required
 @limiter.limit("8 per minute")
+@token_required
 def get_risks(id_firm=None):
     """
     Route to get calculated risks (result of research).
@@ -206,8 +206,8 @@ def get_risks(id_firm=None):
 
 
 @routes.route('/niimt/api/v1/calculate_risk', methods=['POST'])
-@token_required
 @limiter.limit("1 per second")
+@token_required
 def risk_calculated(id_firm=None):
     """
     Route to send patients data.
