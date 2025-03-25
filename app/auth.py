@@ -30,6 +30,7 @@ def token_required(f):
             # Get allowed methods and id_firm from cache
             allowed_methods = cache_data.get('methods')
             id_firm = cache_data.get('id_firm')
+            type_risk = cache_data.get('type_risk')
 
             # If token doesn't contain methods
             if allowed_methods is None:
@@ -43,9 +44,10 @@ def token_required(f):
                 # Get allowed methods and id_firm from decoded token
                 allowed_methods = decoded['methods']
                 id_firm = decoded['id']
+                type_risk = decoded['type_risk']
 
                 # Save token info in cache for 1 hour
-                cache.set(token, json.dumps({'methods': allowed_methods, 'id_firm': id_firm}), ex=3600)
+                cache.set(token, json.dumps({'methods': allowed_methods, 'id_firm': id_firm, 'type_risk': type_risk}), ex=3600)
                 logger.info("The token has been successfully decrypted and added to the cache. ID firm: %s", id_firm)
             except ExpiredSignatureError:
                 logger.warning("Expired token from IP: %s", request.remote_addr)
@@ -68,8 +70,10 @@ def token_required(f):
         # Save id_firm in global variable g
         g.id_firm = id_firm
 
-        # Pass the id_firm to the function
+        # Pass the id_firm and risk_type to the function
         kwargs['id_firm'] = id_firm
+        kwargs['type_risk'] = type_risk
+
         logger.info("Access to the method '%s' is allowed. ID firm: %s", method_name, id_firm)
 
         # Call the original function with arguments

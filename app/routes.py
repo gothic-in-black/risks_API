@@ -8,7 +8,7 @@ from werkzeug.exceptions import BadRequest
 
 from . import db, limiter, get_id_firm
 from .auth import token_required
-from .utils import check_patient, add_risk
+from .utils import check_patient, add_risk, check_allowed_risks
 from validators.CalculateRisk import type_risks
 
 
@@ -208,7 +208,7 @@ def get_risks(id_firm=None):
 @routes.route('/niimt/api/v1/calculate_risk', methods=['POST'])
 @limiter.limit("1 per second")
 @token_required
-def risk_calculated(id_firm=None):
+def risk_calculated(id_firm=None, type_risk=None):
     """
     Route to send patients data.
 
@@ -216,6 +216,7 @@ def risk_calculated(id_firm=None):
 
     Args:
         - id_firm (int): Firm ID (passed via decorator @token_required)
+        - type_risk (list): Risk index/indices available for this token (passed via decorator @token_required)
         - user (str): Patient's full name
         - birthday (str): Patient's date of birth in format YYYY-mm-dd
         - snils (str): Patient's SNILS
@@ -243,6 +244,7 @@ def risk_calculated(id_firm=None):
     Returns (List): List of calculated risks if return_answer == True else return message 'data for user snils {snils} has been sent successfully'
     """
     firm_id = id_firm
+    risk_type = type_risk
 
     result = []
     # Get data from user's query, check data types
@@ -257,6 +259,13 @@ def risk_calculated(id_firm=None):
         if not type_risk in type_risks:
             logger.warning('Received invalid risk type from firm ID %s: %s', firm_id, type_risk)
             return jsonify({'message': 'This type of risk does not exist'}), 400
+
+        # Check if the requested risk type is available for the token
+        risk_indexes = check_allowed_risks()
+        risk_index = risk_indexes[type_risk]
+        if not risk_index in risk_type:
+            logger.info(f"Request to calculate a risk type which is not permitted for this token. Type risk: {type_risk}, ID firm: {firm_id}")
+            return jsonify({'message': 'This type of risk is not permitted for your token'}), 400
 
         # Create an instance of the class by risk type
         validator = type_risks[type_risk](item)

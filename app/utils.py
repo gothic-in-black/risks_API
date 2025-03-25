@@ -1,9 +1,10 @@
+import json
 import logging
 from flask import jsonify
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
-from . import db
+from . import db, cache
 
 
 # Create a logger instance
@@ -75,3 +76,45 @@ def add_risk(id_type, risk, id_firm, id_patient, user, birthday, **kwargs):
     except Exception as e:
         logger.error("Failed to add calculated risk to DB, patient_id: %s. Error: %s", id_patient, str(e))
         return jsonify({'error': "Internal server error"}), 500
+
+
+def check_allowed_risks():
+    """
+    Gets from DB and saves in the cache a dictionary of risk names and their corresponding numerical indices.
+
+    Example of the dict:
+        {'type_risk_1': 1, 'type_risk_2': 2}
+
+    Returns (Dict): dictionary of risk names (keys) and their corresponding numerical indices (values).
+    """
+    # Check cache for risk types
+    risk_types = cache.get('risks')
+    if risk_types:
+        risk_types = json.loads(risk_types)
+        logger.info("Risk types loaded from cache successfully.")
+    else:
+        # Create session to interact with DB
+        Session = sessionmaker(bind=db.engine)
+        try:
+            with Session() as session:
+                # Load all rows from table 'type_risk'
+                query = text('SELECT * FROM type_risk')
+                risk_types_from_db = session.execute(query)
+
+                # Convert Result object to list of dicts.
+                # Result (example): risk_dict = {'type': 'type_risk_1', 'id': 1}
+                risk_dict = risk_types_from_db.mappings().all()
+
+                # Convert received dicts to format: {'type_risk_1': 1}
+                risk_types = {row['type']: row['id'] for row in risk_dict}
+
+                # Store risk types in cache for 24 hours.
+                cache.set('risks', json.dumps(risk_types), ex=86400)
+                logger.info("Risk types loaded into the cache successfully.")
+
+        except Exception as e:
+            logger.error(f"Failed to add 'type_risk' table data to the cache. Error: {str(e)}")
+            return jsonify({'error': 'Internal server error'}), 500
+
+    # Return list of dicts with risk types
+    return risk_types
