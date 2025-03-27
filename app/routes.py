@@ -54,9 +54,18 @@ def get_listOfEmployees(id_firm=None):
     Method: GET.
 
     Args:
-        - id_firm (int): Firm ID (passed via decorator @token_required).
+        - id_firm (int, optional): Firm ID (passed via decorator @token_required).
 
-    Returns (list): List of employees in JSON format.
+    Returns (Response): JSON response with the structure:
+        {
+            "patients": [
+                {
+                     "name": str,
+                     "snils": str
+                 },
+            ...
+            ]
+        }
     """
     firm_id = id_firm
     logger.info('Receiving patient list for firm ID : %s', firm_id)
@@ -90,11 +99,25 @@ def get_research(id_firm=None):
     Method: GET.
 
     Args:
-        - id_firm (int): Firm ID (passed via decorator @token_required)
-        - dateFrom (str): Start date of the period. Default: '2024-08-01'
-        - dateTo (str): Stop date of the period. Default: current date.
+        - id_firm (int, optional): Firm ID (passed via decorator @token_required).
 
-    Returns (List): List of research.
+    Query parameters:
+        - dateFrom (str, optional): Start date of the period. Default: '2024-08-01'.
+        - dateTo (str, optional): Stop date of the period. Default: current date.
+
+    Returns (Response): JSON response with the structure:
+        {
+            "research": [
+                {
+                    "date": str,
+                     "user": str,
+                     "birthday": str,
+                     "gender": str,
+                     ...
+                },
+            ...
+            ]
+        }
     """
     firm_id = id_firm
     logger.info('Receiving research list for firm ID: %s', firm_id)
@@ -149,11 +172,25 @@ def get_risks(id_firm=None):
     Method: GET.
 
     Args:
-        - id_firm (int): Firm ID (passed via decorator @token_required)
-        - dateFrom (str): Start date of the period. Default: '2024-08-01'
-        - dateTo (str): Stop date of the period. Default: current date.
+        - id_firm (int, optional): Firm ID (passed via decorator @token_required).
 
-    Returns (List): List of calculated risks.
+    Query parameters:
+        - dateFrom (str, optional): Start date of the period. Default: '2024-08-01'.
+        - dateTo (str, optional): Stop date of the period. Default: current date.
+
+    Returns (Response): JSON response with the structure:
+        {
+             "risk": [
+                {
+                     "name": str,
+                     "birthday": str,
+                     "type": str,
+                     "risk": float,
+                     "date": str
+                },
+            ...
+            ]
+        }
     """
     firm_id = id_firm
     logger.info('Receiving risk list for firm ID: %s', firm_id)
@@ -210,38 +247,58 @@ def get_risks(id_firm=None):
 @token_required
 def risk_calculated(id_firm=None, type_risk=None):
     """
-    Route to send patients data.
+    Route to send patient data for risk calculation.
 
     Method: POST.
 
     Args:
-        - id_firm (int): Firm ID (passed via decorator @token_required)
-        - type_risk (list): Risk index/indices available for this token (passed via decorator @token_required)
-        - user (str): Patient's full name
-        - birthday (str): Patient's date of birth in format YYYY-mm-dd
-        - snils (str): Patient's SNILS
-        - gender (str): Patient's gender ('male' or 'female')
-        - smoking (int): 1 for smoking patient, 0 for non-smoking patient
-        - blood_pressure (int): Patient's blood_pressure level
-        - cholesterol (float): Patient's cholesterol level
-        - type (str): Type of calculated risk
-        - return_answer (bool): True if calculated result should be returned. Default: False
+        - id_firm (int, optional): Firm ID (passed via decorator @token_required).
+        - type_risk (list, optional): Risk index/indices available for this token (passed via decorator @token_required).
 
-    Data (list of dict): List of dictionaries containing patient data.
-        Example:
-        [{
-         "user": "Иванов Иван Иванович",
-         "birthday": "1968-09-25",
-         "snils":  "74058576811",
-         "gender": "male",
-         "smoking": 1,
-         "blood_pressure": 129,
-         "cholesterol": 7.0,
-         "type": "score",
-         "return_answer": True
-        }]
+    Request Body (JSON):
+        List of dicts with patient data. Each dict consists of:
+            - Required fields for ALL risk types:
+                {
+                    "user": str,           # Patient's full name (e.g., "Иванов Иван Иванович")
+                    "birthday": str,       # Patient's date of birth in format YYYY-mm-dd (e.g., "1968-09-25")
+                    "snils": str,          # Patient's SNILS (e.g., "123456789")
+                    "gender": str,         # Patient's gender ('male' or 'female')
+                    "type": str,           # Type of calculated risk (e.g., "type_risk_1")
+                    "return_answer": bool  # True if calculated result should be returned. Default: False
+                }
 
-    Returns (List): List of calculated risks if return_answer == True else return message 'data for user snils {snils} has been sent successfully'
+            - Additional fields (depending on the risk type):
+                * for "score" risk type:
+                    {
+                        "smoking": int,         # 1 for smoking patient, 0 for non-smoking patient,
+                        "blood_pressure": int,  # Patient's blood_pressure level (e.g., 129)
+                        "cholesterol": float    # Patient's cholesterol level (e.g., 7.0)
+                    }
+
+                * for "kerdo" risk type:
+                    {
+                        "diastolic_bp": int,    # Patient's diastolic blood pressure (e.g., 70)
+                        "pulse": int            # Patient's pulse (e.g., 65)
+                    }
+
+                * for other types - see http://193.168.3.115/swagger
+
+    Returns:
+        - if return_answer=True:
+            List[dist]: Result of the calculation. Example:
+                [   {
+                        "message": "risk_score for user snils 123456789 = 15.0"
+                    },
+                    ...
+                ]
+
+        - if return_answer=False:
+            List[dist]: Data transmission message. Example:
+                [   {
+                        "message": "data for user snils 123456789 has been sent successfully"
+                    },
+                    ...
+                ]
     """
     firm_id = id_firm
     risk_type = type_risk

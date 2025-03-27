@@ -8,21 +8,31 @@ from app import db
 
 class BaseValidator:
     """
-    Basic validator to check if data contains required fields.
+    Basic validator to check client-provided data before risk calculation.
 
-    The class is created to check that all required fields are presented in transmitted data.
+    Performs the following checks:
+        - Presence of all required fields,
+        - Absence of extraneous fields,
+        - Data type correctness.
 
     Attributes:
-        - required_fields (list): List of the required fields.
-        - correct_len (int): Expected length of the data (if applicable).
-        - research_list (list): List of fields relevant for research (e.g., 'firm_id', 'id_type', etc.).
-        - data (dict): Data for checking.
+        - required_fields (list): List of the required fields for selected risk type.
+        - correct_len (int): Expected length of the data (if applicable) for selected risk type.
+        - research_list (list): Columns of the 'research' table for loading patient data matching the selected risk type.
+        - data (dict): Client-provided data for checking.
 
     Methods:
-        - validate(): Checks whether all required fields are present in data.
-        - len_data_items(): Checks that the number of arguments received from user matches the expected number of arguments.
-        - check_types(): Checks types of the base arguments received from user.
-        - add_research(): Adds in DB (table 'research') patient's info (including medical tests).
+        - validate() -> bool:
+            Checks whether all required fields are present in data.
+
+        - len_data_items() -> bool:
+            Checks that the number of arguments received from user matches the expected number of arguments.
+
+        - check_types() -> tuple[bool, Union[dict, Response]]:
+            Checks the types of base fields. Returns tuple(bool, data/error)
+
+        - add_research() -> None:
+            Adds in DB (table 'research') patient's info (including medical tests).
     """
     required_fields = []
     correct_len = 0
@@ -33,13 +43,13 @@ class BaseValidator:
         Initializes a validator object with the data to be validated.
 
         Args:
-            - data (dict): Data for checking.
+            - data (dict): The raw input data for checking.
         """
         self.data = data
 
     def validate(self):
         """
-        Checks whether all required fields are present in data.
+        Checks whether all required fields are present in client-provided data.
 
         Returns (bool): True if all required fields are present in data, else False
         """
@@ -50,9 +60,9 @@ class BaseValidator:
 
     def len_data_items(self):
         """
-        Checks that the number of arguments received from user matches the expected number of arguments.
+        Checks that the number of arguments received from client matches the expected number of arguments.
 
-        Returns (bool): True if number of arguments in user data matches the expected number of arguments, else False
+        Returns (bool): True if number of arguments in client data matches the expected number of arguments, else False
         """
         if len(self.data) > self.correct_len:
             return False
@@ -60,14 +70,24 @@ class BaseValidator:
 
     def check_types(self, item):
         """
-        Checks the types of data received from user, that are independent of the risk type.
+        Validates the types of base fields that are common for all risk types.
+
+        Performs type checking for:
+            - Patient identification data (name, birthday, snils, gender)
+            - Calculation control flag (return_answer)
 
         Args:
-            - item (dict): Data for checking.
+            item (dict): Raw input data to validate. Expected to contain:
+                - user (str): Patient's full name
+                - birthday (str): Patient's date of birth in format YYYY-mm-dd
+                - snils (str): Patient's SNILS
+                - gender (str): Patient's gender ('male' or 'female')
+                - return_answer (bool, optional): Flag to return results
 
-        Returns (tuple):
-            - bool: True if all checks were successful else False.
-            - dict or Response: returns dict with valid data if all checks were successful else returns Response object with the error message.
+        Returns:
+             tuple[bool, Union[dict, Response]]:
+                - bool: True if all checks were successful else False.
+                - dict or Response: returns a dict with valid data if all checks pass, otherwise returns a Response object containing the error message.
         """
         user = item.get('user')
         if not isinstance(user, str):
@@ -108,8 +128,8 @@ class BaseValidator:
                 - id_type (int): Risk ID.
                 - id_patient (int): Patient ID.
                 - user (str): Patient's full name.
-                - birthday (datetime): Patient's date of birth.
-                - gender (str): Patient's gender.
+                - birthday (datetime): Patient's date of birth in format YYYY-mm-dd.
+                - gender (str): Patient's gender ('male' or 'female')
                 - date (str): Date of research.
 
             Returns: None
@@ -129,20 +149,25 @@ class BaseValidator:
 
 class ScoreRiskValidator(BaseValidator):
     """
-    Validator for SCORE risk calculation.
+    Validator to check client-provided data and SCORE risk calculation
 
-    This class extends the capabilities of the base validator by adding specific fields for risk calculation.
+    This class extends the capabilities of the base validator by adding specific fields for SCORE risk calculation.
     After successful validation, performs risk calculation based on the provided data.
 
     Attributes:
-        - required_fields (list): List of the required fields.
-        - correct_len (int): Expected length of the data (if applicable).
-        - research_list (list): List of fields relevant for research (e.g., 'firm_id', 'id_type', etc.).
-        - data (dict): Data for checking.
+        - required_fields (list): List of the required fields for selected risk type.
+        - correct_len (int): Expected length of the data (if applicable) for selected risk type.
+        - research_list (list): Columns of the 'research' table for loading patient data matching the selected risk type.
+        - data (dict): Client-provided data for checking.
 
     Methods:
-        - calculate_risk(): Calculate risk based on medical tests such as: age, gender, smoking, blood pressure and cholesterol level.\
-        - check_types(): Checks types of the arguments received from user, that are needed for score risk calculation.
+        - calculate_risk() -> float:
+            Calculate risk based on medical tests such as: age, gender, smoking, blood pressure and cholesterol level.\
+
+        - check_types() -> tuple[bool, Union[dict, Response]]:
+            Performs two-layer type validation:
+            1. Inherits base type checks from BaseValidator via super()
+            2. Adds SCORE-specific type verifications
     """
     required_fields = ['user', 'birthday', 'snils', 'gender', 'smoking', 'blood_pressure', 'cholesterol', 'type']
     correct_len = 9
@@ -150,14 +175,15 @@ class ScoreRiskValidator(BaseValidator):
 
     def calculate_risk(self, birthday, gender, smoking, blood_pressure, cholesterol, **kwargs):
         """
-        Calculates risk based on given parameters.
+        Calculates SCORE risk based on given parameters.
 
         Args:
-            - birthday (str): Patient's date of birth.
+            - birthday (str): Patient's date of birth in format YYYY-mm-dd.
             - gender (str): Patient gender ('male' or 'female').
             - smoking (int): 1 for smoking patient, 0 for non-smoking patient.
             - blood_pressure (int): Blood pressure of the patient.
             - cholesterol (float): Cholesterol level of the patient.
+            - kwargs (dict): Patient parameters not required for risk calculation.
 
         Returns (float): Calculated risk.
         """
@@ -210,14 +236,24 @@ class ScoreRiskValidator(BaseValidator):
 
     def check_types(self, item):
         """
-        Checks the types of data received from user, that are needed for score risk calculation.
+        Checks the types of data received from client, that are needed for SCORE risk calculation.
 
         Args:
-            - item (dict): Data for checking.
+            item (dict): Raw input data to validate. Expected to contain:
+                - user (str): Patient's full name
+                - birthday (str): Patient's date of birth in format YYYY-mm-dd
+                - snils (str): Patient's SNILS
+                - gender (str): Patient's gender ('male' or 'female')
+                - smoking (int): 1 for smoking patient, 0 for non-smoking patient
+                - blood_pressure (int): Patient's blood_pressure level
+                - cholesterol (float): Patient's cholesterol level
+                - type (str): Type of risk
+                - return_answer (bool, optional): Flag to return results
 
-        Returns (tuple):
-            - bool: True if all checks were successful else False.
-            - dict or Response: returns dict with valid data if all checks were successful else returns Response object with the error message.
+        Returns:
+             tuple[bool, Union[dict, Response]]:
+                - bool: True if all checks were successful else False.
+                - dict or Response: returns a dict with valid data if all checks pass, otherwise returns a Response object containing the error message.
         """
         is_valid, result = super().check_types(item)
         if not is_valid:
@@ -245,20 +281,25 @@ class ScoreRiskValidator(BaseValidator):
 
 class KerdoIndexValidator(BaseValidator):
     """
-    Validator for Kerdo Index calculation.
+    Validator to check client-provided data and KERDO risk calculation.
 
-    This class extends the capabilities of the base validator by adding specific fields for Kerdo Index calculation.
+    This class extends the capabilities of the base validator by adding specific fields for KERDO Index calculation.
     After successful validation, performs risk calculation based on the provided data.
 
     Attributes:
-        - required_fields (list): List of the required fields.
-        - correct_len (int): Expected length of the data (if applicable).
-        - research_list (list): List of fields relevant for research (e.g., 'firm_id', 'id_type', etc.).
-        - data (dict): Data for checking.
+        - required_fields (list): List of the required fields for selected risk type.
+        - correct_len (int): Expected length of the data (if applicable) for selected risk type.
+        - research_list (list): Columns of the 'research' table for loading patient data matching the selected risk type.
+        - data (dict): Client-provided data for checking.
 
     Methods:
-        - calculate_risk(): Calculate risk based on medical tests such as: 'diastolic_bp', 'pulse'.\
-        - check_types(): Checks types of the arguments received from user, that are needed for Kerdo Index calculation.
+        - calculate_risk() -> float:
+            Calculate risk based on medical tests such as: diastolic_bp, pulse.
+
+        - check_types() -> tuple[bool, Union[dict, Response]]:
+            Performs two-layer type validation:
+            1. Inherits base type checks from BaseValidator via super()
+            2. Adds KERDO-specific type verifications
     """
     required_fields = ['user', 'birthday', 'snils', 'gender', 'diastolic_bp', 'pulse', 'type']
     correct_len = 8
@@ -271,7 +312,7 @@ class KerdoIndexValidator(BaseValidator):
         Args:
             - diastolic_bp (int): Diastolic blood pressure of the patient.
             - pulse (int): Heart rate (pulse) of the patient.
-
+            - kwargs (dict): Patient parameters not required for risk calculation.
 
         Returns (float): Calculated risk.
         """
@@ -281,14 +322,23 @@ class KerdoIndexValidator(BaseValidator):
 
     def check_types(self, item):
         """
-        Checks the types of data received from user, that are needed for Kerdo Index calculation.
+        Checks the types of data received from client, that are needed for KERDO risk calculation.
 
         Args:
-            - item (dict): Data for checking.
+            item (dict): Raw input data to validate. Expected to contain:
+                - user (str): Patient's full name
+                - birthday (str): Patient's date of birth in format YYYY-mm-dd
+                - snils (str): Patient's SNILS
+                - gender (str): Patient's gender ('male' or 'female')
+                - diastolic_bp (int): Patient's diastolic blood pressure
+                - pulse (int): Patient's pulse
+                - type (str): Type of risk
+                - return_answer (bool, optional): Flag to return results
 
-        Returns (tuple):
-            - bool: True if all checks were successful else False.
-            - dict or Response: returns dict with valid data if all checks were successful else returns Response object with the error message.
+        Returns:
+             tuple[bool, Union[dict, Response]]:
+                - bool: True if all checks were successful else False.
+                - dict or Response: returns a dict with valid data if all checks pass, otherwise returns a Response object containing the error message.
         """
         is_valid, result = super().check_types(item)
         if not is_valid:
@@ -310,20 +360,25 @@ class KerdoIndexValidator(BaseValidator):
 
 class KvaasIndexValidator(BaseValidator):
     """
-    Validator for Kvaas Index calculation.
+    Validator to check client-provided data and KVAAS index calculation.
 
-    This class extends the capabilities of the base validator by adding specific fields for Kvaas Index calculation.
+    This class extends the capabilities of the base validator by adding specific fields for KVAAS index calculation.
     After successful validation, performs risk calculation based on the provided data.
 
     Attributes:
-        - required_fields (list): List of the required fields.
-        - correct_len (int): Expected length of the data (if applicable).
-        - research_list (list): List of fields relevant for research (e.g., 'firm_id', 'id_type', etc.).
-        - data (dict): Data for checking.
+        - required_fields (list): List of the required fields for selected risk type.
+        - correct_len (int): Expected length of the data (if applicable) for selected risk type.
+        - research_list (list): Columns of the 'research' table for loading patient data matching the selected risk type.
+        - data (dict): Client-provided data for checking.
 
     Methods:
-        - calculate_risk(): Calculate risk based on medical tests such as: 'diastolic_bp', 'systolic_bp', 'pulse'.\
-        - check_types(): Checks types of the arguments received from user, that are needed for Kvaas Index calculation.
+        - calculate_risk() -> float:
+            Calculate risk based on medical tests such as: diastolic_bp, systolic_bp, pulse.
+
+        - check_types() -> tuple[bool, Union[dict, Response]]:
+            Performs two-layer type validation:
+            1. Inherits base type checks from BaseValidator via super()
+            2. Adds KVAAS-specific type verifications
     """
     required_fields = ['user', 'birthday', 'snils', 'gender', 'diastolic_bp', 'systolic_bp', 'pulse', 'type']
     correct_len = 9
@@ -337,7 +392,7 @@ class KvaasIndexValidator(BaseValidator):
             - diastolic_bp (int): Diastolic blood pressure of the patient.
             - pulse (int): Heart rate (pulse) of the patient.
             - systolic_bp (int): Systolic blood pressure of the patient.
-
+            - kwargs (dict): Patient parameters not required for risk calculation.
 
         Returns (float): Calculated risk.
         """
@@ -347,14 +402,24 @@ class KvaasIndexValidator(BaseValidator):
 
     def check_types(self, item):
         """
-        Checks the types of data received from user, that are needed for Kvaas Index calculation.
+        Checks the types of data received from user, that are needed for KVAAS index calculation.
 
         Args:
-            - item (dict): Data for checking.
+            item (dict): Raw input data to validate. Expected to contain:
+                - user (str): Patient's full name
+                - birthday (str): Patient's date of birth in format YYYY-mm-dd
+                - snils (str): Patient's SNILS
+                - gender (str): Patient's gender ('male' or 'female')
+                - diastolic_bp (int): Patient's diastolic blood pressure
+                - systolic_bp (int): Patient's systolic blood pressure
+                - pulse (int): Patient's pulse
+                - type (str): Type of risk
+                - return_answer (bool, optional): Flag to return results
 
-        Returns (tuple):
-            - bool: True if all checks were successful else False.
-            - dict or Response: returns dict with valid data if all checks were successful else returns Response object with the error message.
+        Returns:
+             tuple[bool, Union[dict, Response]]:
+                - bool: True if all checks were successful else False.
+                - dict or Response: returns a dict with valid data if all checks pass, otherwise returns a Response object containing the error message.
         """
         is_valid, result = super().check_types(item)
         if not is_valid:

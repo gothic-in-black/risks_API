@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def token_required(f):
     """
     Decorator for checking the existence and validity of the JWT token.
-    It sends the id_firm in function in case of successful check.
+    It sends the id_firm and type_risk in function in case of successful check.
     """
     @wraps(f)
     def decorator(*args, **kwargs):

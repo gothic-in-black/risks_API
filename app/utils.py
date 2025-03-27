@@ -15,11 +15,12 @@ def check_patient(id_firm, snils,  user, birthday, gender, **kwargs):
     Checks patient's presence in DB. In case of absence patient in DB, adds him.
 
     Args:
-        - snils (int): Patient's SNILS
         - id_firm (int): Firm ID (passed via decorator @token_required)
+        - snils (str): Patient's SNILS
         - user (str): Patient's full name
-        - birthday (str): Patient's date of birth
-        - gender (str): Patient's gender
+        - birthday (str): Patient's date of birth in format YYYY-mm-dd
+        - gender (str): Patient's gender (male or female)
+        - kwargs: Additional patient parameters (depends on the type of risk)
 
     Returns: Patient's ID (id_patient)
     """
@@ -55,10 +56,11 @@ def add_risk(id_type, risk, id_firm, id_patient, user, birthday, **kwargs):
     Args:
         - id_type (int): Risk ID
         - risk (float): Calculated risk of the current patient
+        - id_firm (int): Firm ID (passed via decorator @token_required)
         - id_patient (int): Patient ID
-        - name (str): Patient's full name
+        - user (str): Patient's full name
         - birthday (datetime): Patient's date of birth
-        - firm_id (int): Firm ID (passed via decorator @token_required)
+        - kwargs: Additional patient parameters (depends on the type of risk)
 
     Returns: None
     """
