@@ -10,14 +10,14 @@ from . import db, cache
 # Create a logger instance
 logger = logging.getLogger(__name__)
 
-def check_patient(id_firm, snils,  user, birthday, gender, **kwargs):
+def check_patient(id_firm, snils,  name, birthday, gender, **kwargs):
     """
     Checks patient's presence in DB. In case of absence patient in DB, adds him.
 
     Args:
         - id_firm (int): Firm ID (passed via decorator @token_required)
         - snils (str): Patient's SNILS
-        - user (str): Patient's full name
+        - name (str): Patient's full name
         - birthday (str): Patient's date of birth in format YYYY-mm-dd
         - gender (str): Patient's gender (male or female)
         - kwargs: Additional patient parameters (depends on the type of risk)
@@ -35,20 +35,20 @@ def check_patient(id_firm, snils,  user, birthday, gender, **kwargs):
             if result == 0:
                 # Add row in DB with patient's info (name, birthday, gender, snils, id_firm)
                 query = text('INSERT INTO patients (name, birthday, gender, snils, id_firm) VALUES (:name, :birthday, :gender, :snils, :id_firm)')
-                session.execute(query, {'name': user, 'birthday': birthday, 'gender': gender, 'snils': snils, 'id_firm': id_firm})
+                session.execute(query, {'name': name, 'birthday': birthday, 'gender': gender, 'snils': snils, 'id_firm': id_firm})
                 session.commit()
 
             # Get patient's ID (id_patient)
             query_id_patience = text('SELECT id FROM patients WHERE snils = :snils AND id_firm = :id_firm')
             id_patient = session.execute(query_id_patience, {'snils': snils, 'id_firm': id_firm}).scalar()
-            logger.info("Check for patient's presence in DB was successful. Name: %s, snils: %s", user, snils)
+            logger.info("Check for patient's presence in DB was successful. Name: %s, snils: %s", name, snils)
             return id_patient
     except Exception as e:
-        logger.error("Failed to check patient's presence in DB, name: %s, snils: %s. Error: %s", user, snils, str(e))
+        logger.error("Failed to check patient's presence in DB, name: %s, snils: %s. Error: %s", name, snils, str(e))
         return jsonify({'error': "Internal server error"}), 500
 
 
-def add_risk(id_type, risk, id_firm, id_patient, user, birthday, **kwargs):
+def add_risk(id_type, risk, id_firm, id_patient, name, birthday, **kwargs):
     """
     Adds in DB (table 'risks') calculated risk.
     The same patient but with different medical tests can be presented in the table several times.
@@ -58,7 +58,7 @@ def add_risk(id_type, risk, id_firm, id_patient, user, birthday, **kwargs):
         - risk (float): Calculated risk of the current patient
         - id_firm (int): Firm ID (passed via decorator @token_required)
         - id_patient (int): Patient ID
-        - user (str): Patient's full name
+        - name (str): Patient's full name
         - birthday (datetime): Patient's date of birth
         - kwargs: Additional patient parameters (depends on the type of risk)
 
@@ -72,7 +72,7 @@ def add_risk(id_type, risk, id_firm, id_patient, user, birthday, **kwargs):
         with Session() as session:
             # Insert patient's calculated risk in DB (table 'risks')
             query = text('INSERT INTO risks (id_type, risk, id_patient, name, birthday, id_firm, date) VALUES (:id_type, :risk, :id_patient, :name, :birthday, :id_firm, :date_calculate)')
-            session.execute(query, {'id_type': id_type, 'risk': risk, 'id_patient': id_patient, 'name': user, 'birthday': birthday, 'id_firm': id_firm, 'date_calculate': date_calculate})
+            session.execute(query, {'id_type': id_type, 'risk': risk, 'id_patient': id_patient, 'name': name, 'birthday': birthday, 'id_firm': id_firm, 'date_calculate': date_calculate})
             session.commit()
             logger.info("Added calculated risk for patient_id: %s to DB", id_patient)
     except Exception as e:

@@ -110,7 +110,7 @@ def get_research(id_firm=None, **kwargs):
             "research": [
                 {
                     "date": str,
-                     "user": str,
+                     "name": str,
                      "birthday": str,
                      "gender": str,
                      ...
@@ -259,7 +259,7 @@ def risk_calculated(id_firm=None, type_risk=None):
         List of dicts with patient data. Each dict consists of:
             - Required fields for ALL risk types:
                 {
-                    "user": str,           # Patient's full name (e.g., "Иванов Иван Иванович")
+                    "name": str,           # Patient's full name (e.g., "Иванов Иван Иванович")
                     "birthday": str,       # Patient's date of birth in format YYYY-mm-dd (e.g., "1968-09-25")
                     "snils": str,          # Patient's SNILS (e.g., "123456789")
                     "gender": str,         # Patient's gender ('male' or 'female')
@@ -287,7 +287,7 @@ def risk_calculated(id_firm=None, type_risk=None):
         - if return_answer=True:
             List[dist]: Result of the calculation. Example:
                 [   {
-                        "message": "risk_score for user snils 123456789 = 15.0"
+                        "message": "risk_score for patient snils 123456789 = 15.0"
                     },
                     ...
                 ]
@@ -295,7 +295,7 @@ def risk_calculated(id_firm=None, type_risk=None):
         - if return_answer=False:
             List[dist]: Data transmission message. Example:
                 [   {
-                        "message": "data for user snils 123456789 has been sent successfully"
+                        "message": "data for patient snils 123456789 has been sent successfully"
                     },
                     ...
                 ]
@@ -304,7 +304,7 @@ def risk_calculated(id_firm=None, type_risk=None):
     risk_type = type_risk
 
     result = []
-    # Get data from user's query, check data types
+    # Get data from client's query, check data types
     data = request.json
     logger.info('Request for risk calculation for %s patients from firm ID: %s', len(data), firm_id)
     for item in data:
@@ -358,7 +358,7 @@ def risk_calculated(id_firm=None, type_risk=None):
         # Add patient's info to DB (table 'research')
         try:
             validator.add_research(id_firm=firm_id, id_type=id_type, id_patient=id_patient, **res)
-            logger.info("Patient's research data was added to DB successfully. Name: %s, snils: %s", res['user'], res['snils'])
+            logger.info("Patient's research data was added to DB successfully. Name: %s, snils: %s", res['name'], res['snils'])
         except Exception as e:
             logger.error("Failed to add patient's info to DB, patient_id: %s, kwargs: %s. Error: %s", id_patient, res, str(e))
 
@@ -376,9 +376,9 @@ def risk_calculated(id_firm=None, type_risk=None):
         # Add to List 'result' calculated risk if return_answer == True, else add success message.
         # SNILS uses in messages to identify patient
         if res['return_answer']:
-            result.append({'message': f'risk_score for user snils {res['snils']} = {risk}'})
+            result.append({'message': f'risk_score for patient snils {res['snils']} = {risk}'})
         else:
-            result.append({'message': f'data for user snils {res['snils']} has been sent successfully'})
-    # Return result of the query to user
-    logger.info("Data from %s patients was successfully proceeded and the result was sent to the user", len(result))
+            result.append({'message': f'data for patient snils {res['snils']} has been sent successfully'})
+    # Return result of the query to client
+    logger.info("Data from %s patients was successfully proceeded and the result was sent to the client", len(result))
     return result

@@ -26,7 +26,7 @@ class BaseValidator:
             Checks whether all required fields are present in data.
 
         - len_data_items() -> bool:
-            Checks that the number of arguments received from user matches the expected number of arguments.
+            Checks that the number of arguments received from client matches the expected number of arguments.
 
         - check_types() -> tuple[bool, Union[dict, Response]]:
             Checks the types of base fields. Returns tuple(bool, data/error)
@@ -36,7 +36,7 @@ class BaseValidator:
     """
     required_fields = []
     correct_len = 0
-    research_list = ['id_firm', 'id_type', 'id_patient', 'user', 'birthday', 'gender', 'date']
+    research_list = ['id_firm', 'id_type', 'id_patient', 'name', 'birthday', 'gender', 'date']
 
     def __init__(self, data):
         """
@@ -78,7 +78,7 @@ class BaseValidator:
 
         Args:
             item (dict): Raw input data to validate. Expected to contain:
-                - user (str): Patient's full name
+                - name (str): Patient's full name
                 - birthday (str): Patient's date of birth in format YYYY-mm-dd
                 - snils (str): Patient's SNILS
                 - gender (str): Patient's gender ('male' or 'female')
@@ -89,9 +89,9 @@ class BaseValidator:
                 - bool: True if all checks were successful else False.
                 - dict or Response: returns a dict with valid data if all checks pass, otherwise returns a Response object containing the error message.
         """
-        user = item.get('user')
-        if not isinstance(user, str):
-            return False, jsonify({'message': f'The type of user must be a string, not a {type(user).__name__}.'})
+        name = item.get('name')
+        if not isinstance(name, str):
+            return False, jsonify({'message': f'The type of name must be a string, not a {type(name).__name__}.'})
 
         birthday_date = item.get('birthday')
         if not isinstance(birthday_date, str):
@@ -115,7 +115,7 @@ class BaseValidator:
         if not isinstance(return_answer, bool):
             return False, jsonify({'message': f'The type of return_answer must be a bool, not {type(return_answer).__name__}'})
 
-        return True, {'user': user, 'birthday': birthday, 'snils': snils, 'gender': gender, 'return_answer': return_answer}
+        return True, {'name': name, 'birthday': birthday, 'snils': snils, 'gender': gender, 'return_answer': return_answer}
 
 
     def add_research(self, **kwargs):
@@ -127,7 +127,7 @@ class BaseValidator:
                 - id_firm (int): Firm ID.
                 - id_type (int): Risk ID.
                 - id_patient (int): Patient ID.
-                - user (str): Patient's full name.
+                - name (str): Patient's full name.
                 - birthday (datetime): Patient's date of birth in format YYYY-mm-dd.
                 - gender (str): Patient's gender ('male' or 'female')
                 - date (str): Date of research.
@@ -169,9 +169,9 @@ class ScoreRiskValidator(BaseValidator):
             1. Inherits base type checks from BaseValidator via super()
             2. Adds SCORE-specific type verifications
     """
-    required_fields = ['user', 'birthday', 'snils', 'gender', 'smoking', 'blood_pressure', 'cholesterol', 'type']
+    required_fields = ['name', 'birthday', 'snils', 'gender', 'smoking', 'blood_pressure', 'cholesterol', 'type']
     correct_len = 9
-    research_list = ['id_firm', 'id_type', 'id_patient', 'user', 'birthday', 'gender', 'date', 'smoking', 'blood_pressure', 'cholesterol']
+    research_list = ['id_firm', 'id_type', 'id_patient', 'name', 'birthday', 'gender', 'date', 'smoking', 'blood_pressure', 'cholesterol']
 
     def calculate_risk(self, birthday, gender, smoking, blood_pressure, cholesterol, **kwargs):
         """
@@ -240,7 +240,7 @@ class ScoreRiskValidator(BaseValidator):
 
         Args:
             item (dict): Raw input data to validate. Expected to contain:
-                - user (str): Patient's full name
+                - name (str): Patient's full name
                 - birthday (str): Patient's date of birth in format YYYY-mm-dd
                 - snils (str): Patient's SNILS
                 - gender (str): Patient's gender ('male' or 'female')
@@ -301,9 +301,9 @@ class KerdoIndexValidator(BaseValidator):
             1. Inherits base type checks from BaseValidator via super()
             2. Adds KERDO-specific type verifications
     """
-    required_fields = ['user', 'birthday', 'snils', 'gender', 'diastolic_bp', 'pulse', 'type']
+    required_fields = ['name', 'birthday', 'snils', 'gender', 'diastolic_bp', 'pulse', 'type']
     correct_len = 8
-    research_list = ['id_firm', 'id_type', 'id_patient', 'user', 'birthday', 'gender', 'date', 'diastolic_bp', 'pulse']
+    research_list = ['id_firm', 'id_type', 'id_patient', 'name', 'birthday', 'gender', 'date', 'diastolic_bp', 'pulse']
 
     def calculate_risk(self, diastolic_bp, pulse, **kwargs):
         """
@@ -326,7 +326,7 @@ class KerdoIndexValidator(BaseValidator):
 
         Args:
             item (dict): Raw input data to validate. Expected to contain:
-                - user (str): Patient's full name
+                - name (str): Patient's full name
                 - birthday (str): Patient's date of birth in format YYYY-mm-dd
                 - snils (str): Patient's SNILS
                 - gender (str): Patient's gender ('male' or 'female')
@@ -380,9 +380,9 @@ class KvaasIndexValidator(BaseValidator):
             1. Inherits base type checks from BaseValidator via super()
             2. Adds KVAAS-specific type verifications
     """
-    required_fields = ['user', 'birthday', 'snils', 'gender', 'diastolic_bp', 'systolic_bp', 'pulse', 'type']
+    required_fields = ['name', 'birthday', 'snils', 'gender', 'diastolic_bp', 'systolic_bp', 'pulse', 'type']
     correct_len = 9
-    research_list = ['id_firm', 'id_type', 'id_patient', 'user', 'birthday', 'gender', 'date', 'diastolic_bp', 'systolic_bp', 'pulse']
+    research_list = ['id_firm', 'id_type', 'id_patient', 'name', 'birthday', 'gender', 'date', 'diastolic_bp', 'systolic_bp', 'pulse']
 
     def calculate_risk(self, diastolic_bp, systolic_bp, pulse, **kwargs):
         """
@@ -402,11 +402,11 @@ class KvaasIndexValidator(BaseValidator):
 
     def check_types(self, item):
         """
-        Checks the types of data received from user, that are needed for KVAAS index calculation.
+        Checks the types of data received from client, that are needed for KVAAS index calculation.
 
         Args:
             item (dict): Raw input data to validate. Expected to contain:
-                - user (str): Patient's full name
+                - name (str): Patient's full name
                 - birthday (str): Patient's date of birth in format YYYY-mm-dd
                 - snils (str): Patient's SNILS
                 - gender (str): Patient's gender ('male' or 'female')
@@ -445,8 +445,8 @@ class KvaasIndexValidator(BaseValidator):
 
 
 
-# This dict is used in "routes.py" to create an instance of the right class accordingly user query.
-# Key of the dict is received from user data, Value is name of the corresponding class
+# This dict is used in "routes.py" to create an instance of the right class accordingly client query.
+# Key of the dict is received from client-provided data, Value is name of the corresponding class
 type_risks = {
     'score': ScoreRiskValidator,
     'kerdo': KerdoIndexValidator,
