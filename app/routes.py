@@ -6,7 +6,7 @@ from sqlalchemy import text
 from datetime import datetime, date
 from werkzeug.exceptions import BadRequest
 
-from . import db, limiter, get_id_firm
+from . import db, limiter, get_id_firm, cache
 from .auth import token_required
 from .utils import check_patient, add_risk, check_allowed_risks
 from validators.CalculateRisk import type_risks
@@ -346,18 +346,14 @@ def risk_calculated(id_firm=None, type_risk=None):
         # Check DB for presence of the current patient, in case of absence insert him into DB
         id_patient = check_patient(firm_id, **res)
 
-        # Get risk ID (id_type) to pass it in function "add_research"
-        # Create session to interact with DB
-        Session = sessionmaker(bind=db.engine)
-        try:
-            with Session() as session:
-                # Get risk ID by its name
-                query = text('SELECT id FROM type_risk WHERE type = :type_risk')
-                id_type = session.execute(query, {'type_risk': type_risk}).scalar()
-                logger.info('Successfully received id_type from DB ')
-        except Exception as e:
-            logger.error("Error receiving id_type from DB: %s", str(e))
-            return jsonify({'error': "Internal server error"}), 500
+        # Get risk ID (id_type) from cache to pass it in function "add_research"
+        cache_data = cache.get('risks')
+        if cache_data:
+            cache_data = json.loads(cache_data)
+            id_type = cache_data.get(type_risk)
+        else:
+            risk_types = check_allowed_risks()
+            id_type = risk_types[type_risk]
 
         # Add patient's info to DB (table 'research')
         try:
