@@ -31,7 +31,7 @@ def bad_request(e):
 @routes.errorhandler(429)
 def ratelimit_error(e):
     id_firm = get_id_firm()
-    logging.warning("Too many requests from id_firm %s", id_firm)
+    logging.warning("Too many requests from %s", id_firm)
     return jsonify({'error': 'Too many requests',
                     'message': "You have exceeded the limit of requests. Please try again later.",
                     'timestamp': datetime.now().isoformat()}), 429

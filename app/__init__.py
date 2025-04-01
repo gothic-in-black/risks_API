@@ -1,5 +1,6 @@
 import redis
 import logging
+import json
 from flask import Flask, request, g
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
@@ -33,9 +34,22 @@ config = dotenv_values('.env')
 
 
 def get_id_firm():
-    """Returns if_firm if it exists in global variable 'g' else returns client IP."""
-    return getattr(g, 'id_firm', request.remote_addr)
+    """
+    Used as Limiter's key_func.
 
+    Returns (str):
+        - id_firm from cached JWT token (for authenticated requests)
+        - client IP (for unauthenticated/invalid requests)
+    """
+    token = request.headers.get('Authorization')
+    if not token:
+        return request.remote_addr
+    cache_data = cache.get(token)
+    if cache_data:
+        cache_data = json.loads(cache_data)
+        id_firm = cache_data.get('id_firm')
+        return id_firm
+    return request.remote_addr
 
 # Initializing a limiter object using the id_firm as a key
 limiter = Limiter(

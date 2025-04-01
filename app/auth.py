@@ -2,7 +2,7 @@ import json
 import logging
 import jwt
 from functools import wraps
-from flask import request, jsonify, g
+from flask import request, jsonify
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError, ImmatureSignatureError
 from . import cache, config
 
@@ -66,9 +66,6 @@ def token_required(f):
         if method_name not in allowed_methods:
             logger.warning("Access to the method '%s' forbidden for ID firm: %s", method_name, id_firm)
             return jsonify({'message': 'Method not allowed!'}), 403
-
-        # Save id_firm in global variable g
-        g.id_firm = id_firm
 
         # Pass the id_firm and risk_type to the function
         kwargs['id_firm'] = id_firm
