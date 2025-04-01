@@ -287,7 +287,7 @@ def risk_calculated(id_firm=None, type_risk=None):
         - if return_answer=True:
             List[dist]: Result of the calculation. Example:
                 [   {
-                        "message": "risk_score for patient snils 123456789 = 15.0"
+                        "message": "risk for patient snils 123456789 = 15.0"
                     },
                     ...
                 ]
@@ -376,7 +376,7 @@ def risk_calculated(id_firm=None, type_risk=None):
         # Add to List 'result' calculated risk if return_answer == True, else add success message.
         # SNILS uses in messages to identify patient
         if res['return_answer']:
-            result.append({'message': f'risk_score for patient snils {res['snils']} = {risk}'})
+            result.append({'message': f'risk for patient snils {res['snils']} = {risk}'})
         else:
             result.append({'message': f'data for patient snils {res['snils']} has been sent successfully'})
     # Return result of the query to client

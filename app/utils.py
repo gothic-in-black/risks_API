@@ -118,5 +118,5 @@ def check_allowed_risks():
             logger.error(f"Failed to add 'type_risk' table data to the cache. Error: {str(e)}")
             return jsonify({'error': 'Internal server error'}), 500
 
-    # Return list of dicts with risk types
+    # Return dict with risk types
     return risk_types
